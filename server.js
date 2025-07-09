@@ -1,12 +1,13 @@
 // import express
 const express = require('express')
 
-const { engine } = require('express-handlebars')
-
 // import dotenv
 const dotenv = require('dotenv')
 dotenv.config()
 
+const { engine } = require('express-handlebars')
+
+const { User } = require('./models/user.class')
 // create an app using express
 const app = express()
 
@@ -21,15 +22,19 @@ app.set('views', './views')
 
 // routes start here
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     console.log('root url invoked!')
 
-    const data = [
-        { firstName: 'Gangadhar', lastName: 'Palla' },
-        { firstName: 'Shanmadhi', lastName: '' },
-    ]
+    const response = await User.find()
 
-    res.render('home', { data })
+    if (!response.success) {
+        console.error('error while loading users', response)
+        return res.status(400).json({ success: false, error: response?.error?.sqlMessage || response?.error?.message || response?.error })
+    }
+
+    console.log('users found', response)
+
+    res.render('home', { data: response?.result })
 })
 
 app.get('/about', (req, res) => {
