@@ -11,6 +11,8 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.840.0",
+    "aws-sdk": "^2.1692.0",
     "express": "^5.1.0",
     "express-handlebars": "^8.0.2",
     "mysql2": "^3.14.1",
