@@ -5,18 +5,24 @@ const express = require('express')
 const dotenv = require('dotenv')
 dotenv.config()
 
-const { engine } = require('express-handlebars')
+const handlebars = require('express-handlebars')
 
 const { User } = require('./models/user.class')
+const { getUser } = require('./models/user-sm.class')
+const { helpers } = require('./services/helper.service')
 // create an app using express
 const app = express()
+
+const hbs = handlebars.create({
+    helpers: helpers
+})
 
 // configure express app to use json format
 app.use(express.json())
 // configure express app to use encoded url
 app.use(express.urlencoded({ extended: true }))
 
-app.engine('handlebars', engine())
+app.engine('handlebars', hbs.engine)
 app.set('view engine', 'handlebars')
 app.set('views', './views')
 
@@ -25,7 +31,8 @@ app.set('views', './views')
 app.get('/', async (req, res) => {
     console.log('root url invoked!')
 
-    const response = await User.find()
+    const User2 = await getUser()
+    const response = await User2.find()
 
     if (!response.success) {
         console.error('error while loading users', response)

@@ -1,4 +1,6 @@
-// const mysql2 = require('mysql2/promise')
+const mysql2 = require('mysql2/promise')
+
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager')
 
 // const pool = mysql2.createPool({
 //     user: process.env.DB_USER,
@@ -9,12 +11,8 @@
 
 // module.exports = { pool }
 
-const mysql2 = require('mysql2/promise');
-const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
-
-// Initialize Secrets Manager client
 const secretsClient = new SecretsManagerClient({
-    region: process.env.AWS_REGION || 'us-east-1'
+    region: process.env.AWS_REGION || "ap-south-1"
 });
 
 // Function to get database credentials from Secrets Manager
@@ -46,6 +44,8 @@ async function getDbCredentials() {
 async function createPoolWithSecrets() {
     const credentials = await getDbCredentials();
 
+    console.log('credentials', credentials);
+
     return mysql2.createPool({
         user: credentials.user,
         password: credentials.password,
@@ -58,28 +58,46 @@ async function createPoolWithSecrets() {
     });
 }
 
-// Initialize pool
+// Pool instance and initialization promise
 let pool = null;
+let initializationPromise = null;
 
-// Export pool (will be set after initialization)
-module.exports = {
-    pool: null,
-    initializePool: async () => {
-        if (!pool) {
-            pool = await createPoolWithSecrets();
-            module.exports.pool = pool;
-        }
+// Function to get the pool (ensures it's initialized)
+async function getPool() {
+    if (pool) {
         return pool;
     }
-};
 
-// Auto-initialize pool when module loads
-(async () => {
+    // If initialization is already in progress, wait for it
+    if (initializationPromise) {
+        return initializationPromise;
+    }
+
+    // Start initialization
+    initializationPromise = createPoolWithSecrets();
+
     try {
-        pool = await createPoolWithSecrets();
-        module.exports.pool = pool;
+        pool = await initializationPromise;
         console.log('Database pool initialized with AWS Secrets Manager');
+        return pool;
     } catch (error) {
         console.error('Failed to initialize database pool:', error);
+        // Reset the promise so we can retry
+        initializationPromise = null;
+        throw error;
     }
-})();
+}
+
+// Export both the getPool function and a pool property for backward compatibility
+module.exports = {
+    getPool,
+    // For backward compatibility, you can also export pool but it should be used with getPool
+    get pool() {
+        return pool;
+    },
+    // Export a promise that resolves when pool is ready
+    poolReady: (async () => {
+        await getPool();
+        return pool;
+    })()
+};
