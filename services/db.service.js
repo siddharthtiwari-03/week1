@@ -12,7 +12,11 @@ const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client
 // module.exports = { pool }
 
 const secretsClient = new SecretsManagerClient({
-    region: process.env.AWS_REGION || "ap-south-1"
+    region: process.env.AWS_REGION || "ap-south-1",
+    // credentials: {
+    //     accessKeyId: process.env.AWS_ACCESS_KEY,
+    //     secretAccessKey: process.env.AWS_SECRET_KEY
+    // }
 });
 
 // Function to get database credentials from Secrets Manager
